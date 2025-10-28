@@ -1,5 +1,7 @@
 # 🤖 AI 챗봇 스트리밍 API 샘플 프로젝트
 
+![Preview](preview.gif)
+
 ## 📁 파일 구성
 
 - `streaming-backend.js` - Node.js/Express 백엔드 서버
@@ -134,14 +136,8 @@ data: {"content": "", "done": true}
 
 ## 🔑 실제 LLM API 사용하기
 
-`streaming-backend.js`의 `/api/chat/stream-openai` 엔드포인트를 사용하려면:
-
 1. OpenAI & Claude API 키 발급
 2. /back-end/.env 파일의 `YOUR_[플랫폼]_API_KEY`를 실제 키로 교체
-3. 프론트엔드에서 엔드포인트 URL 변경:
-   ```javascript
-   fetch('http://localhost:3001/api/chat/stream-openai', ...)
-   ```
 
 ## 🎨 커스터마이징
 
