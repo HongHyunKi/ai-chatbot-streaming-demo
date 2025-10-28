@@ -1,1 +1,15 @@
+# IDE
 /.idea
+
+# macOS
+.DS_Store
+
+# Environment variables
+.env
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
