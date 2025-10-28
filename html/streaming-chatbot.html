@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI ChatBot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f0f2f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .chat-container {
+      height: 500px;
+      overflow-y: auto;
+      padding: 20px;
+      background-color: #fafafa;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      display: flex;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.assistant {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-bubble {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .message.assistant .message-bubble {
+      background: white;
+      color: #333;
+      border: 1px solid #e0e0e0;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background-color: currentColor;
+      margin-left: 2px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .input-container {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 10px;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 24px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    #messageInput:focus {
+      border-color: #667eea;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #sendButton {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    #sendButton:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    #sendButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #stopButton {
+      background: #dc3545;
+      color: white;
+    }
+
+    #stopButton:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .api-selector {
+      padding: 15px 20px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .api-selector label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      cursor: pointer;
+    }
+
+    .radio-option span {
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI ChatBot</h1>
+      <p>Streaming API</p>
+    </div>
+
+    <div class="api-selector">
+      <label>API</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="api" value="/api/chat/stream" checked>
+          <span>스트리밍 테스트 API</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="api" value="/api/chat/stream-openai">
+          <span>OpenAI</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="api" value="/api/chat/stream-claude">
+          <span>Claude</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="message assistant">
+        <div class="message-bubble">
+          안녕하세요! 무엇을 도와드릴까요?
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="메시지를 입력하세요..."
+        autocomplete="off"
+      >
+      <button id="sendButton">전송</button>
+      <button id="stopButton" class="hidden">중지</button>
+    </div>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const stopButton = document.getElementById('stopButton');
+
+    let isStreaming = false;
+    let abortController = null;
+
+    function addMessage(role, content = '') {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+
+      const bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'message-bubble';
+      bubbleDiv.textContent = content;
+
+      messageDiv.appendChild(bubbleDiv);
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      return bubbleDiv;
+    }
+
+    function addCursor(element) {
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      element.appendChild(cursor);
+      return cursor;
+    }
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message || isStreaming) return;
+
+      // 선택된 API 엔드포인트 가져오기
+      const selectedApi = document.querySelector('input[name="api"]:checked').value;
+
+      // 사용자 메시지 추가
+      addMessage('user', message);
+      messageInput.value = '';
+
+      // AI 응답 시작
+      isStreaming = true;
+      sendButton.disabled = true;
+      sendButton.classList.add('hidden');
+      stopButton.classList.remove('hidden');
+
+      const assistantBubble = addMessage('assistant', '');
+      const cursor = addCursor(assistantBubble);
+
+      try {
+        abortController = new AbortController();
+
+        const response = await fetch(`http://localhost:3001${selectedApi}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message }),
+          signal: abortController.signal
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.done) {
+                cursor.remove();
+                isStreaming = false;
+              } else if (data.content) {
+                // 커서 앞에 텍스트 추가
+                cursor.insertAdjacentText('beforebegin', data.content);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+              }
+
+              if (data.error) {
+                assistantBubble.textContent = '오류: ' + data.error;
+                cursor.remove();
+              }
+            }
+          }
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          assistantBubble.textContent += ' [중지됨]';
+          console.log('스트리밍이 중지되었습니다.');
+        } else {
+          console.error('에러:', error);
+          assistantBubble.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+        }
+        cursor.remove();
+      } finally {
+        isStreaming = false;
+        sendButton.disabled = false;
+        sendButton.classList.remove('hidden');
+        stopButton.classList.add('hidden');
+        abortController = null;
+      }
+    }
+
+    function stopStreaming() {
+      if (abortController) {
+        abortController.abort();
+      }
+    }
+
+    // 이벤트 리스너
+    sendButton.addEventListener('click', sendMessage);
+    stopButton.addEventListener('click', stopStreaming);
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
